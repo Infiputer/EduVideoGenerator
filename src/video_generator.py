@@ -187,7 +187,36 @@ def create_video_with_segments(
 
     print(f"\n[Combining {len(video_clips)} segments into video...]")
     final_video = concatenate_videoclips(video_clips, method="compose")
-    final_video.write_videofile(output_path, fps=24, codec="libx264", audio_codec="aac")
+
+    # Use GPU encoding (NVENC) if available, otherwise fall back to CPU
+    import subprocess
+
+    try:
+        result = subprocess.run(
+            ["ffmpeg", "-hide_banner", "-encoders"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        has_nvenc = "h264_nvenc" in result.stdout
+    except:
+        has_nvenc = False
+
+    if has_nvenc:
+        print("  Using GPU encoding (NVENC)...")
+        final_video.write_videofile(
+            output_path,
+            fps=24,
+            codec="h264_nvenc",
+            audio_codec="aac",
+            preset="fast",
+            bitrate="2000k",
+        )
+    else:
+        print("  Using CPU encoding (libx264)...")
+        final_video.write_videofile(
+            output_path, fps=24, codec="libx264", audio_codec="aac"
+        )
 
     print(f"✓ Video saved: {output_path}")
     return output_path
