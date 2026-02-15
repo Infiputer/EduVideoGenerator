@@ -1,0 +1,5 @@
+edge-tts
+python-dotenv
+requests
+pillow
+moviepy
